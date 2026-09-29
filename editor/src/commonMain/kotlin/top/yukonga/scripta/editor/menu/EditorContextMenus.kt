@@ -1,6 +1,9 @@
 package top.yukonga.scripta.editor.menu
 
 import androidx.compose.foundation.background
+import top.yukonga.scripta.editor.EditorStrings
+import top.yukonga.scripta.editor.LocalEditorStrings
+import top.yukonga.scripta.editor.labelFor
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -83,6 +86,7 @@ internal fun SelectionActionToolbar(
     readOnly: Boolean,
     posRect: (TextPosition) -> FloatArray?,
     onPerform: (EditorContextAction) -> Unit,
+    strings: EditorStrings = LocalEditorStrings.current,
 ) {
     if (!show()) return
     val sel = engine.selection
@@ -149,7 +153,7 @@ internal fun SelectionActionToolbar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             actions.forEach { action ->
-                ToolbarButton(label = action.zhLabel, colors = colors) { onPerform(action) }
+                ToolbarButton(label = strings.labelFor(action), colors = colors) { onPerform(action) }
             }
         }
     }
@@ -194,6 +198,7 @@ internal fun EditorContextMenu(
     anchor: () -> Offset?,
     onDismiss: () -> Unit,
     onPerform: (EditorContextAction) -> Unit,
+    strings: EditorStrings = LocalEditorStrings.current,
 ) {
     if (!show()) return
     val at = anchor() ?: return
@@ -244,7 +249,7 @@ internal fun EditorContextMenu(
                 EditorContextAction.Paste, EditorContextAction.SelectAll,
             ).forEach { action ->
                 ContextMenuRow(
-                    label = action.zhLabel,
+                    label = strings.labelFor(action),
                     enabled = availability.isAvailable(action),
                     colors = colors,
                 ) { onPerform(action) }

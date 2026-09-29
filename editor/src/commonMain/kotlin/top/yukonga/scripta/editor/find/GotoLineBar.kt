@@ -23,7 +23,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import top.yukonga.scripta.editor.EditorColors
+import top.yukonga.scripta.editor.EditorStrings
 import top.yukonga.scripta.editor.GotoLineSession
+import top.yukonga.scripta.editor.LocalEditorStrings
 
 /**
  * 停靠式跳转行号条：与查找条同族——嵌在编辑器根 Column 顶部、占布局行，不用 focusable Popup
@@ -36,6 +38,7 @@ internal fun GotoLineBar(
     lineCount: Int,
     colors: EditorColors,
     onRequestEditorFocus: () -> Unit,
+    strings: EditorStrings = LocalEditorStrings.current,
 ) {
     if (!session.visible) return
     val fieldFocus = remember { FocusRequester() }
@@ -59,7 +62,7 @@ internal fun GotoLineBar(
         FindField(
             value = session.input,
             onValueChange = { session.input = it.filter(Char::isDigit) },
-            placeholder = "跳转到行",
+            placeholder = strings.gotoLine,
             colors = colors,
             modifier = Modifier
                 .weight(1f)
@@ -82,11 +85,11 @@ internal fun GotoLineBar(
             onImeSearch = { jumpAndRefocus() },
         )
         BasicText(
-            text = "共 $lineCount 行",
+            text = strings.totalLines(lineCount),
             style = TextStyle(color = colors.symbolBarForeground.copy(alpha = 0.75f), fontSize = 12.sp),
             maxLines = 1,
         )
-        ActionChip("跳转", colors) { jumpAndRefocus() }
+        ActionChip(strings.goto, colors) { jumpAndRefocus() }
         ActionChip("✕", colors) { closeAndRefocus() }
     }
     // 挂载后聚焦输入框（初值为当前行号、挂载态全选：直接键入即覆盖）。

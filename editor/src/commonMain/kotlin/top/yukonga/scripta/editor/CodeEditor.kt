@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.overscroll
 import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -225,6 +226,8 @@ fun CodeEditor(
      * 每次重组换新实例会把两级缓存整个冲掉、逐帧全量重算。
      */
     highlighter: SyntaxHighlighter? = null,
+    /** 编辑器多语言文案，默认根据当前系统 Locale 自动解析。 */
+    strings: EditorStrings = EditorStrings.auto(),
 ) {
     // 初始内容在 rememberCodeEditorController(initialText) 工厂里播种（构造即播种：无空文档首帧、
     // 无重组重播风险）；换文档走 controller.setDocument。本 composable 不再有文本入参。
@@ -1062,21 +1065,24 @@ fun CodeEditor(
     val showSymbolBar = !readOnly && symbols.isNotEmpty()
 
     // 根为 Column：查找条（开启时）停靠最上、文本区（weight 1f）居中、符号条常驻在下。Column 底色铺满整列（含系统栏区）。
-    Column(modifier.background(colors.background)) {
-        // 停靠式查找/替换条：占自己的布局行，文本区随开合让位；不用 Popup——Android 上 focusable Popup
-        // 会吞掉浮层外全部触摸（编辑区/宿主工具栏点不动），而输入框又必须可获焦收 IME。
-        FindReplaceBar(
-            session = findSession,
-            colors = colors,
-            readOnly = readOnly,
-            onRequestEditorFocus = { focusRequester.requestFocus() },
-        )
-        GotoLineBar(
-            session = gotoSession,
-            lineCount = lineCount,
-            colors = colors,
-            onRequestEditorFocus = { focusRequester.requestFocus() },
-        )
+    CompositionLocalProvider(LocalEditorStrings provides strings) {
+        Column(modifier.background(colors.background)) {
+            // 停靠式查找/替换条：占自己的布局行，文本区随开合让位；不用 Popup——Android 上 focusable Popup
+            // 会吞掉浮层外全部触摸（编辑区/宿主工具栏点不动），而输入框又必须可获焦收 IME。
+            FindReplaceBar(
+                session = findSession,
+                colors = colors,
+                readOnly = readOnly,
+                onRequestEditorFocus = { focusRequester.requestFocus() },
+                strings = strings,
+            )
+            GotoLineBar(
+                session = gotoSession,
+                lineCount = lineCount,
+                colors = colors,
+                onRequestEditorFocus = { focusRequester.requestFocus() },
+                strings = strings,
+            )
         Box(
             Modifier
                 .fillMaxWidth()
@@ -1857,6 +1863,7 @@ fun CodeEditor(
                 readOnly = readOnly,
                 posRect = { caretRectLive.value(it) },
                 onPerform = { clipboardActions.perform(it); showTouchMenu = false },
+                strings = strings,
             )
             // 桌面右键上下文菜单：锚在右键按下点（编辑器局部）。
             EditorContextMenu(
@@ -1867,6 +1874,7 @@ fun CodeEditor(
                 anchor = { contextMenuAnchor },
                 onDismiss = { showContextMenu = false },
                 onPerform = { clipboardActions.perform(it); showContextMenu = false },
+                strings = strings,
             )
         }
         // 底部符号快捷条：只读不显示。点键只把 value 交 engine 插到光标处，**不主动聚焦/弹键盘**：
@@ -1880,6 +1888,7 @@ fun CodeEditor(
                 windowInsets = bottomBarInsets,
             )
         }
+    }
     }
 }
 

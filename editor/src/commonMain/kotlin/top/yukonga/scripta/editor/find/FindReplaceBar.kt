@@ -45,6 +45,8 @@ import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import top.yukonga.scripta.editor.EditorColors
+import top.yukonga.scripta.editor.EditorStrings
+import top.yukonga.scripta.editor.LocalEditorStrings
 import top.yukonga.scripta.editor.editorNoFontPaddingStyle
 
 /**
@@ -60,6 +62,7 @@ internal fun FindReplaceBar(
     colors: EditorColors,
     readOnly: Boolean,
     onRequestEditorFocus: () -> Unit,
+    strings: EditorStrings = LocalEditorStrings.current,
 ) {
     if (!session.visible) return
     val queryFocus = remember { FocusRequester() }
@@ -80,7 +83,7 @@ internal fun FindReplaceBar(
             FindField(
                 value = session.query,
                 onValueChange = { session.query = it },
-                placeholder = "查找",
+                placeholder = strings.find,
                 colors = colors,
                 // 弹性宽度：固定尺寸的计数/开关/按钮先占位，输入框吸收剩余宽度——窄屏（或大字体缩放）
                 // 下被压缩的是输入框，行尾的 ✕ 等控件在任何屏宽都可见。
@@ -104,12 +107,12 @@ internal fun FindReplaceBar(
                 onImeSearch = { session.next() },
             )
             BasicText(
-                text = counterText(session),
+                text = counterText(session, strings),
                 style = TextStyle(color = colors.symbolBarForeground.copy(alpha = 0.75f), fontSize = 12.sp),
                 maxLines = 1,
             )
             ToggleChip("Aa", session.caseSensitive, colors) { session.caseSensitive = it }
-            ToggleChip("词", session.wholeWord, colors) { session.wholeWord = it }
+            ToggleChip(strings.wholeWord, session.wholeWord, colors) { session.wholeWord = it }
             ToggleChip(".*", session.useRegex, colors) { session.useRegex = it }
             ActionChip("↑", colors) { session.prev() }
             ActionChip("↓", colors) { session.next() }
@@ -120,7 +123,7 @@ internal fun FindReplaceBar(
                 FindField(
                     value = session.replacement,
                     onValueChange = { session.replacement = it },
-                    placeholder = "替换为",
+                    placeholder = strings.replaceWith,
                     colors = colors,
                     // 与查询框同理：弹性宽度，替换按钮恒可见。
                     modifier = Modifier.weight(1f).onPreviewKeyEvent { ev ->
@@ -139,8 +142,8 @@ internal fun FindReplaceBar(
                     },
                     onImeSearch = { session.replaceCurrent() },
                 )
-                ActionChip("替换", colors) { session.replaceCurrent() }
-                ActionChip("全部替换", colors) { session.replaceAll() }
+                ActionChip(strings.replace, colors) { session.replaceCurrent() }
+                ActionChip(strings.replaceAll, colors) { session.replaceAll() }
             }
         }
     }
@@ -148,10 +151,10 @@ internal fun FindReplaceBar(
     LaunchedEffect(Unit) { queryFocus.requestFocus() }
 }
 
-private fun counterText(session: FindSession): String = when {
+private fun counterText(session: FindSession, strings: EditorStrings): String = when {
     session.query.isEmpty() -> ""
-    session.result.invalidPattern -> "无效正则"
-    session.result.matches.isEmpty() -> "无结果"
+    session.result.invalidPattern -> strings.invalidRegex
+    session.result.matches.isEmpty() -> strings.noResults
     else -> {
         val plus = if (session.result.limitHit) "+" else ""
         "${session.activeIndex + 1}/${session.result.matches.size}$plus"
