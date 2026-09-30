@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import top.yukonga.scripta.editor.EditorEngine
+import top.yukonga.scripta.editor.text.TextPosition
 
 /** 某文档行内的一段匹配高亮：[startCol, endCol) + 所属匹配下标（画布据此区分当前匹配强调色）。 */
 data class FindSpan(val startCol: Int, val endCol: Int, val matchIndex: Int)
@@ -132,15 +133,36 @@ class FindSession internal constructor(private val engine: EditorEngine) {
     private fun buildSpans(matches: List<MatchRange>): Map<Int, List<FindSpan>> {
         if (matches.isEmpty()) return emptyMap()
         val map = HashMap<Int, MutableList<FindSpan>>()
+        var curLine = -1
+        var curLineStart = -1
+        var curLineEnd = -1
+
         matches.forEachIndexed { idx, m ->
-            val s = engine.buffer.positionAt(m.start)
-            val e = engine.buffer.positionAt(m.end)
-            for (line in s.line..e.line) {
-                val cS = if (line == s.line) s.column else 0
-                val cE = if (line == e.line) e.column else engine.buffer.lineLength(line)
-                if (cE > cS || s.line != e.line) {
-                    map.getOrPut(line) { mutableListOf() }.add(FindSpan(cS, cE, idx))
+            val s = if (curLine >= 0 && m.start <= curLineEnd) {
+                TextPosition(curLine, m.start - curLineStart)
+            } else {
+                val pos = engine.buffer.positionAt(m.start)
+                curLine = pos.line
+                curLineStart = m.start - pos.column
+                curLineEnd = curLineStart + engine.buffer.lineLength(curLine)
+                pos
+            }
+
+            if (m.end <= curLineEnd) {
+                val cE = s.column + (m.end - m.start)
+                map.getOrPut(s.line) { ArrayList(2) }.add(FindSpan(s.column, cE, idx))
+            } else {
+                val e = engine.buffer.positionAt(m.end)
+                for (line in s.line..e.line) {
+                    val cS = if (line == s.line) s.column else 0
+                    val cE = if (line == e.line) e.column else engine.buffer.lineLength(line)
+                    if (cE > cS || s.line != e.line) {
+                        map.getOrPut(line) { ArrayList(2) }.add(FindSpan(cS, cE, idx))
+                    }
                 }
+                curLine = e.line
+                curLineStart = m.end - e.column
+                curLineEnd = curLineStart + engine.buffer.lineLength(curLine)
             }
         }
         return map

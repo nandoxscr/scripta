@@ -27,17 +27,43 @@ class FindResult(
  * （防 `a*` 这类模式死循环）；整词经边界后置过滤（字面与正则同一套词字符判定，与引擎双击选词一致）。
  * 命中数达 [maxMatches] 即截断并置 [FindResult.limitHit]，钳住超大文档的开销。
  */
-fun findAllMatches(text: String, query: FindQuery, maxMatches: Int = 20_000): FindResult {
+fun findAllMatches(text: String, query: FindQuery, maxMatches: Int = 2_000): FindResult {
     if (query.text.isEmpty()) return FindResult.Empty
-    val pattern = if (query.regex) query.text else Regex.escape(query.text)
+    val out = ArrayList<MatchRange>()
+    var limitHit = false
+
+    if (!query.regex) {
+        val q = query.text
+        val qLen = q.length
+        val ignoreCase = !query.caseSensitive
+        var i = 0
+        while (i <= text.length - qLen) {
+            val idx = text.indexOf(q, i, ignoreCase = ignoreCase)
+            if (idx < 0) break
+            val e = idx + qLen
+            if (e == idx) {
+                i = idx + 1
+                continue
+            }
+            if (!query.wholeWord || isWholeWordAt(text, idx, e)) {
+                out.add(MatchRange(idx, e))
+                if (out.size >= maxMatches) {
+                    limitHit = text.indexOf(q, e, ignoreCase = ignoreCase) >= 0
+                    break
+                }
+            }
+            i = if (query.wholeWord) idx + 1 else e
+        }
+        return FindResult(out, limitHit = limitHit)
+    }
+
+    val pattern = query.text
     val options = if (query.caseSensitive) emptySet() else setOf(RegexOption.IGNORE_CASE)
     val re = try {
         Regex(pattern, options)
     } catch (_: Exception) {
         return FindResult(emptyList(), invalidPattern = true)
     }
-    val out = ArrayList<MatchRange>()
-    var limitHit = false
     var i = 0
     while (i <= text.length) {
         val m = re.find(text, i) ?: break

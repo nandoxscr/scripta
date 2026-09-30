@@ -104,7 +104,12 @@ internal fun FindReplaceBar(
                             else -> false
                         }
                     },
-                onImeSearch = { session.next() },
+                onImeSearch = {
+                    if (session.result.matches.isEmpty() && session.query.isNotEmpty()) {
+                        session.refresh()
+                    }
+                    session.next()
+                },
             )
             BasicText(
                 text = counterText(session, strings),

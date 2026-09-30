@@ -254,7 +254,12 @@ fun CodeEditor(
                 findSession.caseSensitive, findSession.wholeWord, findSession.useRegex,
                 engine.buffer.version,
             )
-        }.collectLatest { findSession.refresh() }
+        }.collectLatest {
+            if (findSession.visible && findSession.query.isNotEmpty()) {
+                delay(300)
+            }
+            findSession.refresh()
+        }
     }
 
     val density = LocalDensity.current
