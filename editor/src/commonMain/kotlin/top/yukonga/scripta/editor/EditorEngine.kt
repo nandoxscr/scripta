@@ -628,6 +628,10 @@ class EditorEngine(initialText: String = "") {
     // --- surrounding 删除（IME，offset 语义）--------------------------------------------------
 
     fun deleteSurroundingText(before: Int, after: Int) {
+        if (!selection.isEmpty) {
+            replaceRange(selection, "")
+            return
+        }
         val (selS, selE) = selectionOffsets()
         val total = buffer.totalLength()
         val delStart = (selS - before.coerceAtLeast(0)).coerceAtLeast(0)
@@ -650,6 +654,10 @@ class EditorEngine(initialText: String = "") {
     }
 
     fun deleteSurroundingTextInCodePoints(before: Int, after: Int) {
+        if (!selection.isEmpty) {
+            replaceRange(selection, "")
+            return
+        }
         val beforeChars = charsForCodePoints(textBeforeCursorString(before * 2 + 2), before, fromEnd = true)
         val afterChars = charsForCodePoints(textAfterCursorString(after * 2 + 2), after, fromEnd = false)
         deleteSurroundingText(beforeChars, afterChars)

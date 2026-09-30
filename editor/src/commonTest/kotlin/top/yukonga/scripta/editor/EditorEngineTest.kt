@@ -193,6 +193,26 @@ class EditorEngineTest {
         assertEquals("", e.getText())
     }
 
+    @Test
+    fun deleteSurroundingTextWithSelectionDeletesSelection() {
+        val e = EditorEngine("line1\nline2")
+        e.setSelection(TextPosition(1, 0), TextPosition(1, 5)) // select "line2"
+        e.deleteSurroundingText(1, 0)
+        assertEquals("line1\n", e.getText())
+        assertEquals(TextPosition(1, 0), e.selStart)
+        assertTrue(e.selection.isEmpty)
+    }
+
+    @Test
+    fun deleteSurroundingTextInCodePointsWithSelectionDeletesSelection() {
+        val e = EditorEngine("line1\nline2")
+        e.setSelection(TextPosition(1, 0), TextPosition(1, 5)) // select "line2"
+        e.deleteSurroundingTextInCodePoints(1, 0)
+        assertEquals("line1\n", e.getText())
+        assertEquals(TextPosition(1, 0), e.selStart)
+        assertTrue(e.selection.isEmpty)
+    }
+
     // --- Task 6: 光标导航 + getter ---
 
     @Test
